@@ -1,3 +1,9 @@
+'''
+@author Sashi Vardhan Reddy Chandra
+
+@date: 25/11/2021
+'''
+
 from flask import Flask, render_template, request, url_for, redirect, session
 
 # imported libraries from external dependencies
@@ -18,12 +24,22 @@ db = client.get_database('flask_users_database')
 records = db.users_registers
 
 
+'''
+@ description: Used to stored the users data in the MONGO database(creating the users account) and authentication of user
 
+@params : fullname, email, password, confirmpassword
+@return if logged_in else sign up
+
+'''
 @app.route("/", methods=['post', 'get'])
 def index():
     message = ''
+
+        # if user login through the email, session is started and running upto the user logout
     if "email" in session:
         return redirect(url_for("logged_in"))
+
+      # send the data through the http POST method to the database through the server  
     if request.method == "POST":
         user = request.form.get("fullname")
         email = request.form.get("email")
@@ -31,6 +47,7 @@ def index():
         password1 = request.form.get("password")
         password2 = request.form.get("confirmpassword")
 
+        # checking the user details in the database if match shows the appropriate message to user
         user_found = records.find_one({"fullname": user})
         email_found = records.find_one({"email": email})
         if user_found:
@@ -42,6 +59,7 @@ def index():
         if password1 != password2:
             message = 'Passwords should match!'
             return render_template('signup.html', message=message)
+            # encrypt the user password
         else:
             hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
             user_input = {'fullname': user, 'email': email, 'password': hashed}
@@ -60,7 +78,13 @@ if __name__ == "__main__":
 
 
 
+'''
+@ description: Used to show the user email in the logged_in component like session started
 
+@params : email
+@return if logged_in else login components
+
+'''
 @app.route('/logged_in')
 def logged_in():
     if "email" in session:
@@ -71,6 +95,13 @@ def logged_in():
 
 
 
+'''
+@ description: Used to login the user account
+
+@params : email and password
+@return if logged_in else login components
+
+'''
 
 @app.route("/login", methods=["POST", "GET"])
 def login():
@@ -100,6 +131,17 @@ def login():
             return render_template('login.html', message=message)
     return render_template('login.html', message=message)
 
+
+
+
+'''
+
+@ description: Used to logout the user account, session is terminated
+
+@params : email and password
+@return if logged_in else login components
+
+'''
 
 @app.route("/logout", methods=["POST", "GET"])
 def logout():
