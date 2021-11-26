@@ -31,7 +31,7 @@ def index():
         password1 = request.form.get("password")
         password2 = request.form.get("confirmpassword")
 
-        user_found = records.find_one({"name": user})
+        user_found = records.find_one({"fullname": user})
         email_found = records.find_one({"email": email})
         if user_found:
             message = 'There already is a user by that name'
@@ -44,7 +44,7 @@ def index():
             return render_template('signup.html', message=message)
         else:
             hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
-            user_input = {'name': user, 'email': email, 'password': hashed}
+            user_input = {'fullname': user, 'email': email, 'password': hashed}
             records.insert_one(user_input)
 
             user_data = records.find_one({"email": email})
@@ -57,3 +57,54 @@ def index():
 #end of code to run it
 if __name__ == "__main__":
   app.run(debug=True)
+
+
+
+
+@app.route('/logged_in')
+def logged_in():
+    if "email" in session:
+        email = session["email"]
+        return render_template('logged_in.html', email=email)
+    else:
+        return redirect(url_for("login"))
+
+
+
+
+@app.route("/login", methods=["POST", "GET"])
+def login():
+    message = 'Please login to your account'
+    if "email" in session:
+        return redirect(url_for("logged_in"))
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        email_found = records.find_one({"email": email})
+        if email_found:
+            email_val = email_found['email']
+            passwordcheck = email_found['password']
+
+            if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
+                session["email"] = email_val
+                return redirect(url_for('logged_in'))
+            else:
+                if "email" in session:
+                    return redirect(url_for("logged_in"))
+                message = 'Wrong password'
+                return render_template('login.html', message=message)
+        else:
+            message = 'Email not found'
+            return render_template('login.html', message=message)
+    return render_template('login.html', message=message)
+
+
+@app.route("/logout", methods=["POST", "GET"])
+def logout():
+    if "email" in session:
+        session.pop("email", None)
+        return render_template("logout.html")
+    else:
+        return render_template('signin.html')
